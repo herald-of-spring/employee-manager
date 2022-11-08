@@ -94,27 +94,122 @@ async function updateEmployee(empName, newRole) {
 } 
 
 async function mainMenu() {
-  const temp = await inquirer.prompt({
+  const temp = await inquirer.prompt([{
     type: "list",
     message: "Employee Manager Menu:",
     name: "action",
     choices: ["View All Employees", "Add Employee", "Update Employee Role", "View All Roles", "Add Role", "View All Departments", "Add Department", "All done!"]
-  })
+  }]);
   switch (temp.action) {
     case "View All Employees":
-      getTable(employee)
+      getEmployee();
+      break;
+    case "Add Employee":
+      let roleList;
+      await db.query(`SELECT * FROM role`, function (err, results) {
+        roleList = JSON.parse(JSON.stringify(results));
+        roleList.forEach(e => e.title);
+      });
+      let empList;
+      await db.query(`SELECT CONCAT(first_name, ' ', last_name) AS name FROM employee`, function (err, results) {
+        empList = JSON.parse(JSON.stringify(results));
+        empList.forEach(e => e.name);
+      });
+      empList.unshift("None");
+      let newEmp = await inquirer.prompt([{
+        type: "input",
+        message: "What is the employee's first name?",
+        name: "first"
+      }, {
+        type: "input",
+        message: "What is the employee's last name?",
+        name: "last"
+      }, {
+        type: "list",
+        message: "What is the employee's role?",
+        name: "role",
+        choices: roleList
+      }, {
+        type: "list",
+        message: "Who is the employee's manager?",
+        name: "manager",
+        choices: empList
+      }]);
+      if (addToTable("employee", [newEmp.first, newEmp.last, newEmp.role, newEmp.manager])) {
+        console.log(`Successfully added ${newEmp.first} ${newEmp.last} to employees.`);
+      };
+      break;
+    case "Update Employee Role":
+      let emp;
+      await db.query(`SELECT CONCAT(first_name, ' ', last_name) AS name FROM employee`, function (err, results) {
+        emp = JSON.parse(JSON.stringify(results));
+        emp.forEach(e => e.name);
+      });
+      let role;
+      await db.query(`SELECT * FROM role`, function (err, results) {
+        role = JSON.parse(JSON.stringify(results));
+        role.forEach(e => e.title);
+      });
+      let update = await inquirer.prompt([{
+        type: "list",
+        message: "Which employee's role do you want to update?",
+        name: "emp",
+        choices: emp
+      }, {
+        type: "list",
+        message: "Which role do you want to assign the selected employee?",
+        name: "role",
+        choices: role
+      }]);
+      if (updateEmployee(update.emp, update.role)) {
+        console.log(`Successfully updated ${update.emp}'s role to ${update.role}.`);
+      };
+      break;
+    case "View All Roles":
+      getRole();
+      break;
+    case "Add Role":
+      let depList;
+      await db.query(`SELECT * FROM department`, function (err, results) {
+        depList = JSON.parse(JSON.stringify(results));
+        depList.forEach(e => e.name);
+      });
+      let newRole = await inquirer.prompt([{
+        type: "input",
+        message: "What is the name of the role?",
+        name: "newRole"
+      }, {
+        type: "number",
+        message: "What is the salary of the role?",
+        name: "salary"
+      }, {
+        type: "list",
+        message: "What department does the role belong to?",
+        name: "department",
+        choices: depList
+      }]);
+      if (addToTable("role", [newRole.newRole, newRole.salary, newRole.department])) {
+        console.log(`Successfully added ${newRole.newRole} to roles.`);
+      };
+      break;
+    case "View All Departments":
+      getDepartment();
+      break;
+    case "Add Department":
+      let newDep = await inquirer.prompt([{
+        type: "input",
+        message: "What is the name of the department?",
+        name: "newDep"
+      }])
+      if (addToTable("department", [newDep.newDep])) {
+        console.log(`Successfully added ${newDep.newDep} to departments.`);
+      };
+      break;
+    case "All done!":
+      return false;
   }
-  if (temp.action == "View") {
-    await promptEngineer();
-  }
-  else if (temp.action == "Add Intern") {
-    await promptIntern();
-  }
-  else {
-    await buildWebsite();
-  }
-  await mainMenu();
+  return true;
 }
 
-mainMenu();
+while (mainMenu()) {};
 await db.end();
