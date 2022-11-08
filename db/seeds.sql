@@ -22,4 +22,4 @@ VALUES ("Soraya", "Shirvani", 1, null),
        ("Iris", "Misticrost", 5, null),
        ("Geneva", "Highfrost", 6, 5),
        ("Estelle", "Possik", 7, null),
-       ("Rupert", "Straub", 8, 7)
+       ("Rupert", "Straub", 8, 7);
